@@ -13,8 +13,9 @@ struct Ball {
 	float x = w / 2, y = h / 2;
 };
 Ball ball;
-int step = 0, vy = 1, game_over = 0, jump_limit = ball.y - 3;
-int delay = 200;
+int step = 0, game_over = 0, jump_limit = (int)ball.y - 3, score = 0;
+int delay = 50;
+float vy = 0.5;
 
 void init_buffer();
 void bind_ball();
@@ -26,7 +27,9 @@ void update();
 void control();
 void detect_collision();
 void game_over_message();
+void home_screen();
 void reset_game();
+void count_score();
 
 int main() {
 	srand((unsigned int)time(0));
@@ -36,17 +39,26 @@ int main() {
 			render();
 			control();
 			update();
-			detect_collision();
+			//detect_collision();
 			//Sleep(delay);
 		}
 		game_over_message();
 	}
 }
 
+void count_score() {
+	if (buffer[h - 2][(int)ball.x - 1] == block) {
+		score++;
+	}
+}
+void home_screen() {
+	cout << "w : to jump";
+}
 void reset_game() {
 	game_over = 0;
+	score = 0;
 	play = 'y';
-	vy = 1;
+	vy = 0.5;
 	step = 0;
 	ball.x = w / 2; ball.y = h / 2;
 	step = 0;
@@ -73,7 +85,7 @@ void control() {
 	if (_kbhit()) {
 		char c = _getch();
 		if (c == 'w') {
-			vy = -1;
+			vy = -0.5;
 			jump_limit = ball.y - 3;
 		}
 	}
@@ -81,26 +93,28 @@ void control() {
 }
 
 void update() {
+	count_score();
 	if (ball.y == jump_limit) {
-		vy = 1;
+		vy = 0.5;
 	}
 	unbind_ball();
 	ball.y += vy;
+	detect_collision();
 	bind_ball();
 	shift_obstacles();
 	generate_obstacle();
 	step++;
 }
 void shift_obstacles() {
-	for (int i = 0; i < h; i++) {
-		for (int j = 0; j < w - 1; j++) {
-			if (buffer[i][j+1] == block) {
-				buffer[i][j] = block;
-				buffer[i][j + 1] = ' ';
+		for (int i = 0; i < h; i++) {
+			for (int j = 0; j < w - 1; j++) {
+				if (buffer[i][j + 1] == block) {
+					buffer[i][j] = block;
+					buffer[i][j + 1] = ' ';
+				}
+				if (buffer[i][0] == block) buffer[i][0] = ' ';
 			}
-			if (buffer[i][0] == block) buffer[i][0] = ' ';
 		}
-	}
 }
 void generate_obstacle() {
 	if (step % 10 == 0) {
@@ -109,7 +123,7 @@ void generate_obstacle() {
 			buffer[i][w - 1] = block;
 		}
 		Sleep(delay);
-		int r2 = 1 + rand() % 2;
+		int r2 = 1 + rand() % 4;
 		for (int i = 1; i <= r2; i++) {
 			buffer[h - 1 - i][w - 1] = block;
 		}
@@ -118,7 +132,9 @@ void generate_obstacle() {
 void bind_ball() {
 	int tx = (int)round(ball.x);
 	int ty = (int)round(ball.y);
-	buffer[ty][tx] = ball_body;
+	if (buffer[ty][tx] != block) {
+		buffer[ty][tx] = ball_body;
+	}
 }
 void unbind_ball() {
 	int tx = (int)round(ball.x);
@@ -142,4 +158,5 @@ void render() {
 		}
 		cout << endl;
 	}
+	cout << "Score: " << score << endl;
 }
