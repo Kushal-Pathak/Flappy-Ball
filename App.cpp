@@ -3,7 +3,7 @@
 #include <ctime>
 #include <windows.h>
 #define h 15
-#define w 30
+#define w 20
 #define block (char)254
 #define ball_body 'O';
 using namespace std;
@@ -15,7 +15,8 @@ struct Ball {
 Ball ball;
 int step = 0, game_over = 0, jump_limit = (int)ball.y - 3, score = 0;
 int delay = 50;
-float vy = 0.5;
+float vmax = 0.5f;
+float vy = vmax;
 
 void init_buffer();
 void bind_ball();
@@ -39,8 +40,6 @@ int main() {
 			render();
 			control();
 			update();
-			//detect_collision();
-			//Sleep(delay);
 		}
 		game_over_message();
 	}
@@ -49,6 +48,7 @@ int main() {
 void count_score() {
 	if (buffer[h - 2][(int)ball.x - 1] == block) {
 		score++;
+		Beep(300, 100);
 	}
 }
 void home_screen() {
@@ -58,7 +58,7 @@ void reset_game() {
 	game_over = 0;
 	score = 0;
 	play = 'y';
-	vy = 0.5;
+	vy = vmax;
 	step = 0;
 	ball.x = w / 2; ball.y = h / 2;
 	step = 0;
@@ -66,7 +66,8 @@ void reset_game() {
 	bind_ball();
 }
 void game_over_message() {
-	cout << "Game Over!" << endl << "Play again (y): ";
+	Beep(300, 1000);
+	cout << "\t    Game Over!" << endl << "\t Play again (y): ";
 	play = 'n';
 	cin >> play;
 }
@@ -79,14 +80,20 @@ void detect_collision() {
 	if (ty <= 0 || ty >= h - 1) {
 		game_over = 1;
 	}
+	if (buffer[(int)(ty + vy)][tx] == block) {
+		game_over = 1;
+	}
+	if (buffer[ty][tx+1] == block) {
+		game_over = 1;
+	}
 }
 
 void control() {
 	if (_kbhit()) {
 		char c = _getch();
 		if (c == 'w') {
-			vy = -0.5;
-			jump_limit = ball.y - 3;
+			vy = -vmax;
+			jump_limit = (int)ball.y - 3;
 		}
 	}
 
@@ -95,7 +102,7 @@ void control() {
 void update() {
 	count_score();
 	if (ball.y == jump_limit) {
-		vy = 0.5;
+		vy = vmax;
 	}
 	unbind_ball();
 	ball.y += vy;
@@ -118,7 +125,7 @@ void shift_obstacles() {
 }
 void generate_obstacle() {
 	if (step % 10 == 0) {
-		int r1 = 1 + rand() % 4;
+		int r1 = 1 + rand() % 5;
 		for (int i = 1; i <= r1; i++) {
 			buffer[i][w - 1] = block;
 		}
@@ -139,7 +146,9 @@ void bind_ball() {
 void unbind_ball() {
 	int tx = (int)round(ball.x);
 	int ty = (int)round(ball.y);
-	buffer[ty][tx] = ' ';
+	if (buffer[ty][tx] != block) {
+		buffer[ty][tx] = ' ';
+	}
 }
 void init_buffer() {
 	for (int i = 0; i < h; i++) {
@@ -158,5 +167,5 @@ void render() {
 		}
 		cout << endl;
 	}
-	cout << "Score: " << score << endl;
+	cout << "\t     Score: " << score << endl;
 }
